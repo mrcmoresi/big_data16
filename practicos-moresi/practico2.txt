@@ -1,0 +1,23 @@
+/**Programa sin persistencia en memoria**/
+
+val InputRDD = sc.textFile("/home/mrc/Facultad/BigData/zeppelin-0.6.1-bin-all/doc/wikipedia_short.xml")
+val humanRDD = InputRDD.filter(line => line.contains("human")) 
+val activityRDD = InputRDD.filter(line => line.contains("activity")) 
+val resRDD = humanRDD.intersection(activityRDD)
+humanRDD.count()
+activityRDD.count()
+resRDD.count()
+
+
+
+
+
+/**Programa con persistencia en memoria**/
+
+val InputRDD = sc.textFile("/home/mrc/Facultad/BigData/zeppelin-0.6.1-bin-all/doc/wikipedia_short.xml")
+val humanRDD = InputRDD.filter(line => line.contains("human")).cache()
+val activityRDD = InputRDD.filter(line => line.contains("activity")).cache()
+val resRDD = humanRDD.intersection(activityRDD)
+humanRDD.count()
+activityRDD.count()
+resRDD.count()

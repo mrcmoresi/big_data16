@@ -1,0 +1,88 @@
+Laboratorio 2: Web Analytics
+
+Que es?
+----------------------
+Laboratorio correspondiente a la materia optativa "Big Data", la tarea principal fue a partir de un dataset, un log de actividades, brindado por la catedra reconstruir las sessiones de los usuarios. (a.k.a Sessionization)
+
+Requerimientos
+----------------------
+Spark 2.0.1 [1]
+Sbt (Ver "Antes de ejecutar")
+Scala 2.11.6 [2]
+Zeppelin [3]
+project_setup.sh (disponible en el repositorio)
+
+Antes de ejecutar
+-----------------------
+Debemos tener instalado Sbt, para ello en SO Debian/Ubuntu, se tienen que realizar los siguientes pasos para instalar Sbt
+
+$ echo "deb https://dl.bintray.com/sbt/debian /" | sudo tee -a /etc/apt/sources.list.d/sbt.list
+$ sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 2EE0EA64E40A89B84B2DF73499E82A75642AC823
+$ sudo apt-get update
+$ sudo apt-get install sbt
+
+
+Como Ejecutarlo?
+---------------------
+Preparacion
+----------------
+Primero Debemos empaquetar el Job, para ello le brindamos permisos de ejecucion al script
+
+$ chmod +x project_setup.sh
+
+luego debemos crear el directorio para el job
+$ ./project_setup.sh <NOMBRE DEL PROYECTO>
+
+Esto creara el directorio y subdirectorios necesarios para ejecutar el job.
+Luego debemos reemplazar el archivo webAnalytics.sbt que nos creo por el que bajamos del repositorio
+Tambien debemos pegar el archivo main.scala en el directorio <NOMBRE DEL PROYECTO>/src/main/scala/
+
+Empaquetado
+--------------------
+En caso de ejecutarlo localmente debemos colocarlos en el directorio
+<NOMBRE DEL PROYECTO>
+y debemos ejecutar
+
+$sbt update
+$sbt package
+
+esto nos creara un archivo dentro del directorio <NOMBRE DEL PROYECTO>/target/scala-2.11/webanalytics<scala_version>.jar
+
+En caso de ejecutarlo en un cluster, debemos crear un "fat jar"
+para ello reemplazamos 
+$sbt package
+por
+$sbt assembly
+
+Ejecucion
+-----------------
+Para ejecutarlo es necesario tener Spark[1] en el pc, en este caso utilizamos la version 2.0.1.
+Desde la consola de comandos, nos "paramos" en el directorio de Spark y debemos ejecutar
+
+./bin/spark-submit   --master spark:local [*] <PATH TO webanalitycs.jar> <PATH TO DATASET> <THRESHOLD>
+
+Datos de entrada posibles
+--------------------------------
+Dataset: se le puede pasar un directorio con los logs provistos por la catedra, o un archivo en particular
+Threshold: Duracion de la session en minutos
+
+Salida del programa
+--------------------------------
+La salida consta de dos "archivos" .parquet los cuales se encontraran en el mismo directorio donde esta el dataset/archivo que le pasamos como entrada al programa
+
+Visualizar las metricas
+-------------------------------
+Para ello debemos cargar el archivo "Lab2 Metricas.json" en un notebook de Zeppelin
+Debemos reemplazar <PATH TO PARQUET> por el directorio donde se encuentra la salida del programa.
+Luego se encuentran separadas las metricas segun lo dispuesto por la catedra
+
+Autores
+--------------
+Grupo 02
+
+
+Links
+-----------------------
+[1] : http://spark.apache.org/downloads.html
+[2] : http://www.scala-lang.org/download/
+[3] : https://zeppelin.apache.org/download.html

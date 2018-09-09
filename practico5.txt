@@ -1,0 +1,32 @@
+import org.apache.spark.sql.Dataset
+
+case class Propiedad (sujeto: String, verbo: String, predicado: String)
+case class Tipo(entidad: String, tipo: String)
+case class Tipos(entidad: String, tipos: Array[String])
+case class PropTipo (sujeto: String, tipo: String, verbo: String, predicado: String)
+case class Resultado(sujeto: String, tipos: Array[String], verbo: String, predicado: String)
+
+
+// cargar SparkSparkSession
+val inPropRaw : Dataset[String] = spark.read.text("/home/mrc/Facultad/BigData/zeppelin-0.6.1-bin-all/doc/mappingbased_properties_en.nt").as[String]
+
+val inTypeRaw : Dataset[String] = spark.read.text("/home/mrc/Facultad/BigData/zeppelin-0.6.1-bin-all/doc/instance_types_en.nt").as[String]
+
+//sanitizo mapping_based_properties
+val inPropCleaned : Dataset[Array[String]] = inPropRaw.filter(! _.trim.isEmpty).filter(line => line(0) == '<').map(line => line.dropRight(1)).map(l => l.split(" "))
+
+//sanitizo instance_types_en
+val inTypeCleaned : Dataset[Array[String]] = inTypeRaw.filter(! _.trim.isEmpty).filter(l => l(0) == '<').map(line => line.dropRight(1).split(" "))
+
+//Creo los dataset
+val propertiesDs : Dataset[Propiedad] = inPropCleaned.map{elem => Propiedad(elem(0), elem(1), elem(2))}
+
+val sujetoTipoDs : Dataset[Tipo] = inTypeCleaned.map{elem => Tipo(elem(0), elem(2))}
+
+val grouped = sujetoTipoDs.groupBy($"entidad").agg(collect_list($"tipo").as("Tipos")).as[Tipos]
+
+val joinedDs = propertiesDs.joinWith(grouped, $"sujeto" === $"entidad", "inner").map(item => Resultado(item._1.sujeto, item._2.tipos, item._1.verbo, item._1.predicado)).as[Resultado]
+
+joinedDs.printSchema()
+
+joinedDs.show()

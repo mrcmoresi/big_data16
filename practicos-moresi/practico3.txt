@@ -1,0 +1,22 @@
+import org.apache.spark.rdd.RDD 
+//Creo dos RDD a partir de los archivos
+val input_properties = sc.textFile("/home/mrc/Facultad/BigData/zeppelin-0.6.1-bin-all/doc/practico3/mappingbased_properties_en.nt")
+val input_type = sc.textFile("/home/mrc/Facultad/BigData/zeppelin-0.6.1-bin-all/doc/practico3/instance_types_en.nt")
+
+// Elimino la primer linea con DropRight y Filtro las lineas que en la primer posicion tengan algo distinto de <. Elimino las lineas vacias tambien
+val lines_propertiesRDD = input_properties.map(line => line.dropRight(1)).filter(! _.trim.isEmpty).filter(l => l(0) == '<').map(line => line.split(" "))
+
+// Elimino las lineas vacias, lineasque no empiecen con < y ademas elimino la primer linea que es innecesaria 
+val lines_typeRDD = input_type.map(line => line.dropRight(1)).filter(! _.trim.isEmpty).filter(l => l(0) == '<')
+
+//Creo un nuevo RDD con suejeto predicado y tipo por sujeto
+val sujeto_tipoSujetoRDD = lines_typeRDD.map(line => line.split(" ")).map(line => (line(0), line(2))).groupByKey
+
+//convierto el iterable que crea el groupbykey en algo de tipo lista
+var sujeto_tiposRDD = sujeto_tipoSujetoRDD.map{case (k, vs) => (k, vs.toList.asInstanceOf[List[String]])}
+
+// creo otro RDD con (sujeto,(relacion,predicado))
+val propiedadesRDD  = lines_propertiesRDD.collect{case Array(sujeto,relacion,predicado) => (sujeto, (relacion,predicado))}
+
+//hago join de los dos rdd y formateo la salida como lo dice el enunciado
+propiedadesRDD.join(sujeto_tiposRDD).collect{case (sujeto,((relacion,predicado),l_tipos)) => (sujeto, l_tipos, relacion, predicado)}.collect

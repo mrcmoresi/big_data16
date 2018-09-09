@@ -1,0 +1,37 @@
+import scala.io.Source
+//Funciones Auxiliares
+def cross[X, Y](xs: Traversable[X], ys: Traversable[Y]) = {
+    for { x <- xs; y <- ys } yield (x, y)
+}
+
+def sumatoria(n:Int) : Int = {
+    var sum = 0
+    for (i <- 1 to n-1){
+          sum += i
+    }
+    return sum
+}
+
+
+def wordCoOcurrence (filePath: String) = {
+    val lines  = Source.fromFile(filePath).getLines.toList
+    val words = lines.flatMap(l => l.split(" ")).toList
+    var counts = words.groupBy(w => w).mapValues(_.size)
+    val datos = lines.map(l => ((),l))
+ 
+    val fmap = (_ : Unit, l : String) => l.split(" ").filter(! _.isEmpty).flatMap(w => cross(List(w), l.split(" ").filter(! _.isEmpty).diff(List(w)))).toList.map(key => (key, 1))
+    
+    var amountEachWord = 0
+    var amountPerm = 0
+    val freduce = ( w1w2 : (String,String), vs: List[Int] ) => {if(w1w2._1 != w1w2._2){
+                                                                    (w1w2, vs.fold (0) (_+_))
+                                                                }else{
+                                                                    amountEachWord = counts(w1w2._1)
+                                                                    amountPerm = sumatoria(amountEachWord)
+                                                                    (w1w2, amountPerm)
+                                                                 }
+                                                                }
+    mapReduce (datos) (fmap) (freduce)
+ 
+}
+wordCoOcurrence("/home/mrc/Facultad/BigData/zeppelin-0.6.1-bin-all/doc/practico1.md")

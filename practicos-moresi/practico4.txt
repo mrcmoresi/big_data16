@@ -1,0 +1,43 @@
+import scalaj.http._
+import scala.util.parsing.json._
+import scala.util.{Try, Success, Failure}
+
+def getMetadata(doi:String) : Array[String] = {
+    val BASE_URL = "http://dx.doi.org/"
+    val response = Http(BASE_URL + doi).header("accept", "application/citeproc+json").asString
+    
+    val url_redirect = response.location
+    val response2 = url_redirect.map(url => Http(url).header("accept", "application/json").asString.body)
+    
+    response2 match{
+        case None => return Array()
+        case Some(json_str) => {
+            val parsed = JSON.parseFull(json_str)
+            //Convierto el json en un iterable de instancia de lista
+            val parseMap = parsed.toList.asInstanceOf[List[Map[String,String]]](0)
+            //Con la misma idea del toDateTuple me quedo con los campos que necesito, si no existe le pongo uno por defecto
+            val title = Try(parseMap("title")).getOrElse("N/A").toString
+            val year = (Try((parseMap("published-print").asInstanceOf[Map[String,List[List[Double]]]])("date-parts")(0)(0).toInt).getOrElse("N/A")).toString
+            
+            val publisher = Try(parseMap("publisher")).getOrElse("N/A").toString
+            val book = Try(parseMap("container-title")).getOrElse("N/A").toString
+            val subject = Try((parseMap("subject").asInstanceOf[List[String]])(0)).getOrElse("N/A").toString
+            val type_pub = Try(parseMap("type")).getOrElse("N/A").toString
+            
+            //Construyo el array de salida
+            val result = Array(title,year,type_pub,publisher,book,subject)
+            return result
+        }
+    }
+}
+
+
+val file = sc.textFile("/home/mrc/Facultad/BigData/zeppelin-0.6.1-bin-all/doc/doi.md")
+val baseUrl = "http://dx.doi.org/"
+
+val metadata = file.mapPartitions{
+    line => line.map{
+            case doi => getMetadata(doi)
+    }
+}
+metadata.collect
